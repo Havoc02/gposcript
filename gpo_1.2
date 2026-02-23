@@ -1,0 +1,579 @@
+-- GPO Enhanced ESP & Utilities Script
+-- Multiple Categories with Advanced Features
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Configuration
+local config = {
+    -- ESP Settings
+    legendaryESP = false,
+    mythicalESP = false,
+    rareESP = false,
+    uncommonESP = false,
+    
+    -- Player Settings
+    playerESP = false,
+    playerNames = true,
+    playerHealth = true,
+    playerLevels = false,
+    playerDistance = true,
+    playerTeam = false,
+    playerWeapon = false,
+    playerStamina = false,
+    
+    -- Item Settings
+    itemESP = false,
+    devilFruitESP = false,
+    weaponESP = false,
+    
+    -- Visual Settings
+    espDistance = 500,
+    espScale = 1,
+    showGrid = false,
+    darkMode = true,
+    
+    -- Utility Settings
+    autoKill = false,
+    speedBoost = false,
+    speedValue = 50,
+    noClip = false,
+    infiniteJump = false,
+    
+    -- Advanced Settings
+    enableSound = true,
+    soundVolume = 0.5,
+    updateRate = 0.1,
+    antiCheat = true
+}
+
+local currentTab = "ESP"
+local categoryTabs = {"ESP", "Players", "Items", "Utilities", "Settings"}
+
+-- Create Main UI Container
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "GPOEnhancedUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- Main Panel
+local mainPanel = Instance.new("Frame")
+mainPanel.Name = "MainPanel"
+mainPanel.Size = UDim2.new(0, 500, 0, 600)
+mainPanel.Position = UDim2.new(0, 20, 0, 20)
+mainPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+mainPanel.BorderSizePixel = 0
+mainPanel.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 15)
+corner.Parent = mainPanel
+
+-- Header
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, 60)
+header.BackgroundColor3 = Color3.fromRGB(100, 50, 200)
+header.BorderSizePixel = 0
+header.Parent = mainPanel
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 15)
+headerCorner.Parent = header
+
+-- Header Title
+local headerTitle = Instance.new("TextLabel")
+headerTitle.Name = "Title"
+headerTitle.Size = UDim2.new(1, -80, 1, 0)
+headerTitle.Position = UDim2.new(0, 10, 0, 0)
+headerTitle.BackgroundTransparency = 1
+headerTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+headerTitle.TextSize = 22
+headerTitle.Font = Enum.Font.GothamBold
+headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+headerTitle.Text = "GPO Ultimate Hub"
+headerTitle.Parent = header
+
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Name = "CloseBtn"
+closeBtn.Size = UDim2.new(0, 35, 0, 35)
+closeBtn.Position = UDim2.new(1, -45, 0, 12)
+closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextSize = 22
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Text = "×"
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = header
+
+local closeBtnCorner = Instance.new("UICorner")
+closeBtnCorner.CornerRadius = UDim.new(0, 6)
+closeBtnCorner.Parent = closeBtn
+
+closeBtn.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- Tab Navigation
+local tabContainer = Instance.new("Frame")
+tabContainer.Name = "TabContainer"
+tabContainer.Size = UDim2.new(1, 0, 0, 50)
+tabContainer.Position = UDim2.new(0, 0, 0, 60)
+tabContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+tabContainer.BorderSizePixel = 0
+tabContainer.Parent = mainPanel
+
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.Padding = UDim.new(0, 2)
+tabLayout.Parent = tabContainer
+
+local tabs = {}
+
+for i, tabName in ipairs(categoryTabs) do
+    local tabBtn = Instance.new("TextButton")
+    tabBtn.Name = tabName .. "Tab"
+    tabBtn.Size = UDim2.new(0, 95, 1, 0)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    tabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    tabBtn.TextSize = 14
+    tabBtn.Font = Enum.Font.GothamBold
+    tabBtn.Text = tabName
+    tabBtn.BorderSizePixel = 0
+    tabBtn.Parent = tabContainer
+    
+    local tabCorner = Instance.new("UICorner")
+    tabCorner.CornerRadius = UDim.new(0, 8)
+    tabCorner.Parent = tabBtn
+    
+    tabBtn.MouseButton1Click:Connect(function()
+        currentTab = tabName
+        updateTabDisplay()
+    end)
+    
+    tabs[tabName] = tabBtn
+end
+
+-- Content Area
+local contentArea = Instance.new("ScrollingFrame")
+contentArea.Name = "ContentArea"
+contentArea.Size = UDim2.new(1, -20, 1, -120)
+contentArea.Position = UDim2.new(0, 10, 0, 115)
+contentArea.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+contentArea.BorderSizePixel = 0
+contentArea.ScrollBarThickness = 6
+contentArea.Parent = mainPanel
+
+local contentLayout = Instance.new("UIListLayout")
+contentLayout.Padding = UDim.new(0, 10)
+contentLayout.Parent = contentArea
+
+-- Function to create toggle option
+local function createToggle(parent, label, configKey, onChange)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 40)
+    container.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    container.BorderSizePixel = 0
+    container.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = container
+    
+    local labelObj = Instance.new("TextLabel")
+    labelObj.Size = UDim2.new(0, 250, 1, 0)
+    labelObj.BackgroundTransparency = 1
+    labelObj.TextColor3 = Color3.fromRGB(220, 220, 220)
+    labelObj.TextSize = 14
+    labelObj.Font = Enum.Font.Gotham
+    labelObj.TextXAlignment = Enum.TextXAlignment.Left
+    labelObj.Text = label
+    labelObj.Parent = container
+    
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(0, 60, 0, 28)
+    toggle.Position = UDim2.new(1, -65, 0.5, -14)
+    toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggle.TextSize = 12
+    toggle.Font = Enum.Font.GothamBold
+    toggle.Text = "OFF"
+    toggle.BorderSizePixel = 0
+    toggle.Parent = container
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 6)
+    toggleCorner.Parent = toggle
+    
+    toggle.MouseButton1Click:Connect(function()
+        config[configKey] = not config[configKey]
+        toggle.BackgroundColor3 = config[configKey] and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 60)
+        toggle.Text = config[configKey] and "ON" or "OFF"
+        if onChange then onChange() end
+    end)
+    
+    return container
+end
+
+-- Function to create slider
+local function createSlider(parent, label, configKey, min, max, step)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 50)
+    container.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    container.BorderSizePixel = 0
+    container.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = container
+    
+    local labelObj = Instance.new("TextLabel")
+    labelObj.Size = UDim2.new(1, -60, 0, 20)
+    labelObj.Position = UDim2.new(0, 10, 0, 5)
+    labelObj.BackgroundTransparency = 1
+    labelObj.TextColor3 = Color3.fromRGB(220, 220, 220)
+    labelObj.TextSize = 13
+    labelObj.Font = Enum.Font.Gotham
+    labelObj.TextXAlignment = Enum.TextXAlignment.Left
+    labelObj.Text = label .. ": " .. config[configKey]
+    labelObj.Parent = container
+    
+    local slider = Instance.new("Frame")
+    slider.Size = UDim2.new(1, -20, 0, 4)
+    slider.Position = UDim2.new(0, 10, 0, 30)
+    slider.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    slider.BorderSizePixel = 0
+    slider.Parent = container
+    
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(0, 2)
+    sliderCorner.Parent = slider
+    
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Size = UDim2.new((config[configKey] - min) / (max - min), 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(100, 50, 200)
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Parent = slider
+    
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 2)
+    fillCorner.Parent = sliderFill
+    
+    slider.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local connection
+            connection = RunService.InputChanged:Connect(function()
+                local mouse = UserInputService:GetMouseLocation()
+                local sliderPos = slider.AbsolutePosition.X
+                local sliderSize = slider.AbsoluteSize.X
+                local percent = math.max(0, math.min(1, (mouse.X - sliderPos) / sliderSize))
+                local value = math.round((min + percent * (max - min)) / step) * step
+                config[configKey] = value
+                sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+                labelObj.Text = label .. ": " .. value
+                connection:Disconnect()
+            end)
+        end
+    end)
+    
+    return container
+end
+
+-- Function to update tab display
+function updateTabDisplay()
+    contentArea:ClearAllChildren()
+    
+    if currentTab == "ESP" then
+        createToggle(contentArea, "⭐ Legendary Chest ESP", "legendaryESP")
+        createToggle(contentArea, "✨ Mythical Chest ESP", "mythicalESP")
+        createToggle(contentArea, "💎 Rare Chest ESP", "rareESP")
+        createToggle(contentArea, "🔷 Uncommon Chest ESP", "uncommonESP")
+        createSlider(contentArea, "ESP View Distance", "espDistance", 100, 1000, 50)
+        createSlider(contentArea, "ESP Scale", "espScale", 0.5, 2, 0.1)
+        createToggle(contentArea, "Show Grid Overlay", "showGrid")
+        
+    elseif currentTab == "Players" then
+        createToggle(contentArea, "Player ESP", "playerESP")
+        createToggle(contentArea, "Show Player Names", "playerNames")
+        createToggle(contentArea, "Show Health Bar", "playerHealth")
+        createToggle(contentArea, "Show Distance", "playerDistance")
+        createToggle(contentArea, "Show Player Levels", "playerLevels")
+        createToggle(contentArea, "Show Team", "playerTeam")
+        createToggle(contentArea, "Show Weapon", "playerWeapon")
+        createToggle(contentArea, "Show Stamina", "playerStamina")
+        
+    elseif currentTab == "Items" then
+        createToggle(contentArea, "Item ESP", "itemESP")
+        createToggle(contentArea, "Devil Fruit ESP", "devilFruitESP")
+        createToggle(contentArea, "Weapon ESP", "weaponESP")
+        
+    elseif currentTab == "Utilities" then
+        createToggle(contentArea, "Auto Kill", "autoKill")
+        createToggle(contentArea, "Speed Boost", "speedBoost")
+        createSlider(contentArea, "Speed Value", "speedValue", 10, 100, 5)
+        createToggle(contentArea, "No Clip", "noClip")
+        createToggle(contentArea, "Infinite Jump", "infiniteJump")
+        
+    elseif currentTab == "Settings" then
+        createToggle(contentArea, "Dark Mode", "darkMode")
+        createToggle(contentArea, "Enable Sound", "enableSound")
+        createSlider(contentArea, "Sound Volume", "soundVolume", 0, 1, 0.1)
+        createToggle(contentArea, "Anti-Cheat", "antiCheat")
+    end
+    
+    -- Update tab highlight
+    for tabName, tabBtn in pairs(tabs) do
+        tabBtn.BackgroundColor3 = (tabName == currentTab) and Color3.fromRGB(100, 50, 200) or Color3.fromRGB(40, 40, 45)
+    end
+end
+
+-- Draggable functionality
+local dragging = false
+local dragStart
+local startPos
+
+mainPanel.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainPanel.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input, gameProcessed)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainPanel.Position = startPos + UDim2.new(0, delta.X, 0, delta.Y)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- ESP Creation Function
+local function createESP(object, espType)
+    if object:FindFirstChild("ESPLabel") then return end
+    
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "ESPLabel"
+    billboardGui.Size = UDim2.new(4, 0, 2, 0)
+    billboardGui.MaxDistance = config.espDistance
+    billboardGui.Parent = object
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextScaled = true
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Parent = billboardGui
+
+    return billboardGui, textLabel
+end
+
+-- Main ESP Loop
+RunService.Heartbeat:Connect(function()
+    local workspace = game:GetService("Workspace")
+    
+    -- Legendary Chests
+    if config.legendaryESP then
+        local chests = workspace:FindFirstChild("Chests")
+        if chests then
+            for _, chest in pairs(chests:GetChildren()) do
+                if chest.Name:lower():find("legendary") then
+                    local billboard, textLabel = createESP(chest, "legendary")
+                    if billboard and textLabel then
+                        textLabel.Text = "⭐ LEGENDARY"
+                        textLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Mythical Chests
+    if config.mythicalESP then
+        local chests = workspace:FindFirstChild("Chests")
+        if chests then
+            for _, chest in pairs(chests:GetChildren()) do
+                if chest.Name:lower():find("mythical") then
+                    local billboard, textLabel = createESP(chest, "mythical")
+                    if billboard and textLabel then
+                        textLabel.Text = "✨ MYTHICAL"
+                        textLabel.TextColor3 = Color3.fromRGB(255, 0, 255)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Rare Chests
+    if config.rareESP then
+        local chests = workspace:FindFirstChild("Chests")
+        if chests then
+            for _, chest in pairs(chests:GetChildren()) do
+                if chest.Name:lower():find("rare") then
+                    local billboard, textLabel = createESP(chest, "rare")
+                    if billboard and textLabel then
+                        textLabel.Text = "💎 RARE"
+                        textLabel.TextColor3 = Color3.fromRGB(0, 100, 255)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Uncommon Chests
+    if config.uncommonESP then
+        local chests = workspace:FindFirstChild("Chests")
+        if chests then
+            for _, chest in pairs(chests:GetChildren()) do
+                if chest.Name:lower():find("uncommon") then
+                    local billboard, textLabel = createESP(chest, "uncommon")
+                    if billboard and textLabel then
+                        textLabel.Text = "🔷 UNCOMMON"
+                        textLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Player ESP
+    if config.playerESP then
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= player and plr.Character then
+                local humanoidRootPart = plr.Character:FindFirstChild("HumanoidRootPart")
+                local humanoid = plr.Character:FindFirstChild("Humanoid")
+                
+                if humanoidRootPart and humanoid then
+                    local billboard, textLabel = createESP(humanoidRootPart, "player")
+                    if billboard and textLabel then
+                        local displayText = ""
+                        
+                        -- Player Name
+                        if config.playerNames then
+                            displayText = displayText .. "👤 " .. plr.Name .. "\n"
+                        end
+                        
+                        -- Health Bar
+                        if config.playerHealth then
+                            local healthPercent = math.floor((humanoid.Health / humanoid.MaxHealth) * 100)
+                            local healthBar = "["
+                            local filled = math.floor(healthPercent / 10)
+                            for i = 1, 10 do
+                                healthBar = healthBar .. (i <= filled and "█" or "░")
+                            end
+                            healthBar = healthBar .. "] " .. math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
+                            displayText = displayText .. healthBar .. "\n"
+                        end
+                        
+                        -- Distance
+                        if config.playerDistance then
+                            local distance = (humanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                            displayText = displayText .. "📍 " .. math.round(distance) .. "m\n"
+                        end
+                        
+                        -- Level
+                        if config.playerLevels then
+                            local leaderstats = plr:FindFirstChild("leaderstats")
+                            if leaderstats then
+                                local level = leaderstats:FindFirstChild("Level")
+                                if level then
+                                    displayText = displayText .. "📊 Lvl: " .. level.Value .. "\n"
+                                end
+                            end
+                        end
+                        
+                        -- Team
+                        if config.playerTeam then
+                            local team = plr.Team
+                            if team then
+                                displayText = displayText .. "🏴 Team: " .. team.Name .. "\n"
+                            end
+                        end
+                        
+                        -- Weapon
+                        if config.playerWeapon then
+                            local tool = plr.Character:FindFirstChildOfClass("Tool")
+                            if tool then
+                                displayText = displayText .. "⚔️ " .. tool.Name .. "\n"
+                            else
+                                displayText = displayText .. "⚔️ Unarmed\n"
+                            end
+                        end
+                        
+                        -- Stamina (if available)
+                        if config.playerStamina then
+                            local leaderstats = plr:FindFirstChild("leaderstats")
+                            if leaderstats then
+                                local stamina = leaderstats:FindFirstChild("Stamina")
+                                if stamina then
+                                    displayText = displayText .. "⚡ Stamina: " .. math.floor(stamina.Value) .. "\n"
+                                end
+                            end
+                        end
+                        
+                        textLabel.Text = displayText
+                        textLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+                        textLabel.TextScaled = false
+                        textLabel.TextSize = 11
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Speed Boost Implementation
+local speedConnection
+local function toggleSpeed()
+    if speedConnection then
+        speedConnection:Disconnect()
+        speedConnection = nil
+    end
+    
+    if config.speedBoost and player.Character then
+        speedConnection = RunService.RenderStepped:Connect(function()
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                local humanoid = player.Character.Humanoid
+                humanoid.WalkSpeed = config.speedValue
+            end
+        end)
+    end
+end
+
+-- Infinite Jump
+local infiniteJumpConnection
+local function toggleInfiniteJump()
+    if infiniteJumpConnection then
+        infiniteJumpConnection:Disconnect()
+        infiniteJumpConnection = nil
+    end
+    
+    if config.infiniteJump and player.Character then
+        infiniteJumpConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            if input.KeyCode == Enum.KeyCode.Space then
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:Jump()
+                end
+            end
+        end)
+    end
+end
+
+-- Initialize UI
+updateTabDisplay()
+
+print("✅ GPO Ultimate Hub Loaded!")
+print("📌 Drag to move | Click tabs to switch categories | × to close")
