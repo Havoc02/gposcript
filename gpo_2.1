@@ -1,0 +1,451 @@
+--[[
+    GPO Utility Hub v2
+    Load via: loadstring(game:HttpService():GetAsync("https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/gpo.lua"))()
+]]
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Humanoid = Character:WaitForChild("Humanoid")
+
+-- Reconnect on respawn
+LocalPlayer.CharacterAdded:Connect(function(char)
+    Character = char
+    HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
+    Humanoid = char:WaitForChild("Humanoid")
+end)
+
+-- ============================================
+-- UI LIBRARY
+-- ============================================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "GPOHub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+pcall(function()
+    ScreenGui.Parent = game:GetService("CoreGui")
+end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 350, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -210)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner", MainFrame)
+UICorner.CornerRadius = UDim.new(0, 10)
+
+local UIStroke = Instance.new("UIStroke", MainFrame)
+UIStroke.Color = Color3.fromRGB(100, 60, 200)
+UIStroke.Thickness = 2
+
+-- Title Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 40)
+TitleBar.BackgroundColor3 = Color3.fromRGB(30, 25, 45)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 10)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "⚓ GPO Utility Hub v2"
+Title.TextColor3 = Color3.fromRGB(180, 140, 255)
+Title.TextSize = 18
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TitleBar
+
+-- Close Button
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.BorderSizePixel = 0
+CloseBtn.Parent = TitleBar
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+-- Scroll Frame
+local ScrollFrame = Instance.new("ScrollingFrame")
+ScrollFrame.Size = UDim2.new(1, -20, 1, -55)
+ScrollFrame.Position = UDim2.new(0, 10, 0, 48)
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.ScrollBarThickness = 4
+ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 60, 200)
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+ScrollFrame.Parent = MainFrame
+
+local ListLayout = Instance.new("UIListLayout", ScrollFrame)
+ListLayout.Padding = UDim.new(0, 6)
+ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Button Creators
+local function CreateToggle(name, callback)
+    local toggled = false
+
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(1, 0, 0, 38)
+    Btn.BackgroundColor3 = Color3.fromRGB(35, 30, 50)
+    Btn.Text = "  ○  " .. name
+    Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Btn.TextSize = 14
+    Btn.Font = Enum.Font.GothamSemibold
+    Btn.TextXAlignment = Enum.TextXAlignment.Left
+    Btn.BorderSizePixel = 0
+    Btn.Parent = ScrollFrame
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 8)
+
+    Btn.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        if toggled then
+            Btn.BackgroundColor3 = Color3.fromRGB(60, 40, 100)
+            Btn.Text = "  ●  " .. name
+            Btn.TextColor3 = Color3.fromRGB(180, 140, 255)
+        else
+            Btn.BackgroundColor3 = Color3.fromRGB(35, 30, 50)
+            Btn.Text = "  ○  " .. name
+            Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+        callback(toggled)
+    end)
+
+    return Btn
+end
+
+local function CreateButton(name, callback)
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(1, 0, 0, 38)
+    Btn.BackgroundColor3 = Color3.fromRGB(35, 30, 50)
+    Btn.Text = "  ▶  " .. name
+    Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Btn.TextSize = 14
+    Btn.Font = Enum.Font.GothamSemibold
+    Btn.TextXAlignment = Enum.TextXAlignment.Left
+    Btn.BorderSizePixel = 0
+    Btn.Parent = ScrollFrame
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 8)
+
+    Btn.MouseButton1Click:Connect(function()
+        callback()
+    end)
+
+    return Btn
+end
+
+-- ============================================
+-- FEATURES
+-- ============================================
+
+-- Sprint Speed
+local sprintConnection
+CreateToggle("Speed Boost (Shift)", function(state)
+    if state then
+        sprintConnection = RunService.RenderStepped:Connect(function()
+            if Humanoid and UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                Humanoid.WalkSpeed = 80
+            elseif Humanoid then
+                Humanoid.WalkSpeed = 16
+            end
+        end)
+    else
+        if sprintConnection then sprintConnection:Disconnect() end
+        if Humanoid then Humanoid.WalkSpeed = 16 end
+    end
+end)
+
+-- Infinite Jump
+local infJumpConn
+CreateToggle("Infinite Jump", function(state)
+    if state then
+        infJumpConn = UserInputService.JumpRequest:Connect(function()
+            if Humanoid then
+                Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+    else
+        if infJumpConn then infJumpConn:Disconnect() end
+    end
+end)
+
+-- No Fall Damage
+local noFallConn
+CreateToggle("No Fall Damage", function(state)
+    if state then
+        noFallConn = RunService.Heartbeat:Connect(function()
+            if Humanoid then
+                Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+                Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+            end
+        end)
+    else
+        if noFallConn then noFallConn:Disconnect() end
+        if Humanoid then
+            Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+        end
+    end
+end)
+
+-- Fullbright
+CreateToggle("Fullbright", function(state)
+    local Lighting = game:GetService("Lighting")
+    if state then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = false
+    else
+        Lighting.Brightness = 1
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 10000
+        Lighting.GlobalShadows = true
+    end
+end)
+
+-- ============================================
+-- ENHANCED PLAYER ESP
+-- ============================================
+local espEnabled = false
+local espObjects = {}
+
+CreateToggle("Player ESP", function(state)
+    espEnabled = state
+    if not state then
+        for _, data in pairs(espObjects) do
+            if data.highlight then data.highlight:Destroy() end
+            if data.billboard then data.billboard:Destroy() end
+        end
+        espObjects = {}
+    end
+end)
+
+local function CreateESP(player)
+    if player == LocalPlayer then return end
+
+    local function setup(char)
+        if espObjects[player] then
+            if espObjects[player].highlight then espObjects[player].highlight:Destroy() end
+            if espObjects[player].billboard then espObjects[player].billboard:Destroy() end
+        end
+
+        local hrp = char:WaitForChild("HumanoidRootPart", 5)
+        local head = char:WaitForChild("Head", 5)
+        local hum = char:WaitForChild("Humanoid", 5)
+        if not hrp or not head or not hum then return end
+
+        -- Highlight
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "ESP_Highlight"
+        highlight.FillColor = Color3.fromRGB(120, 70, 200)
+        highlight.FillTransparency = 0.7
+        highlight.OutlineColor = Color3.fromRGB(180, 140, 255)
+        highlight.OutlineTransparency = 0.3
+        highlight.Adornee = char
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.Enabled = espEnabled
+        highlight.Parent = char
+
+        -- Billboard
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ESP_Info"
+        billboard.Size = UDim2.new(0, 200, 0, 60)
+        billboard.StudsOffset = Vector3.new(0, 3.5, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Adornee = head
+        billboard.Enabled = espEnabled
+        billboard.Parent = head
+
+        -- Name label
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = player.Name
+        nameLabel.TextColor3 = Color3.fromRGB(180, 140, 255)
+        nameLabel.TextSize = 14
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextStrokeTransparency = 0.4
+        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        nameLabel.Parent = billboard
+
+        -- Info label
+        local infoLabel = Instance.new("TextLabel")
+        infoLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        infoLabel.Position = UDim2.new(0, 0, 0.5, 0)
+        infoLabel.BackgroundTransparency = 1
+        infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        infoLabel.TextSize = 12
+        infoLabel.Font = Enum.Font.GothamSemibold
+        infoLabel.TextStrokeTransparency = 0.5
+        infoLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        infoLabel.Parent = billboard
+
+        -- Health bar bg
+        local healthBg = Instance.new("Frame")
+        healthBg.Size = UDim2.new(0.6, 0, 0, 4)
+        healthBg.Position = UDim2.new(0.2, 0, 0.95, 0)
+        healthBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        healthBg.BorderSizePixel = 0
+        healthBg.Parent = billboard
+        Instance.new("UICorner", healthBg).CornerRadius = UDim.new(0, 2)
+
+        -- Health bar fill
+        local healthBar = Instance.new("Frame")
+        healthBar.Size = UDim2.new(1, 0, 1, 0)
+        healthBar.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        healthBar.BorderSizePixel = 0
+        healthBar.Parent = healthBg
+        Instance.new("UICorner", healthBar).CornerRadius = UDim.new(0, 2)
+
+        espObjects[player] = {
+            highlight = highlight,
+            billboard = billboard,
+            infoLabel = infoLabel,
+            healthBar = healthBar,
+            humanoid = hum,
+            hrp = hrp
+        }
+    end
+
+    if player.Character then setup(player.Character) end
+    player.CharacterAdded:Connect(setup)
+end
+
+-- Init ESP for all players
+for _, player in pairs(Players:GetPlayers()) do
+    CreateESP(player)
+end
+Players.PlayerAdded:Connect(CreateESP)
+
+-- Cleanup on leave
+Players.PlayerRemoving:Connect(function(player)
+    if espObjects[player] then
+        if espObjects[player].highlight then espObjects[player].highlight:Destroy() end
+        if espObjects[player].billboard then espObjects[player].billboard:Destroy() end
+        espObjects[player] = nil
+    end
+end)
+
+-- Update ESP loop
+RunService.RenderStepped:Connect(function()
+    if not espEnabled then return end
+    if not Character or not Character:FindFirstChild("HumanoidRootPart") then return end
+
+    for player, data in pairs(espObjects) do
+        if data.hrp and data.humanoid and data.infoLabel and data.healthBar then
+            local dist = math.floor((HumanoidRootPart.Position - data.hrp.Position).Magnitude)
+            local hp = math.floor(data.humanoid.Health)
+            local maxHp = math.floor(data.humanoid.MaxHealth)
+            local pct = data.humanoid.Health / data.humanoid.MaxHealth
+
+            data.infoLabel.Text = hp .. "/" .. maxHp .. " HP | " .. dist .. "m"
+
+            data.healthBar.Size = UDim2.new(math.clamp(pct, 0, 1), 0, 1, 0)
+            if pct > 0.5 then
+                data.healthBar.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+            elseif pct > 0.25 then
+                data.healthBar.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
+            else
+                data.healthBar.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+            end
+
+            data.highlight.Enabled = espEnabled
+            data.billboard.Enabled = espEnabled
+        end
+    end
+end)
+
+-- ============================================
+-- ACTION BUTTONS
+-- ============================================
+
+-- Collect Nearby Items
+CreateButton("Collect Nearby Items", function()
+    local collected = 0
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("TouchTransmitter") and obj.Parent and obj.Parent:IsA("BasePart") then
+            local dist = (HumanoidRootPart.Position - obj.Parent.Position).Magnitude
+            if dist < 100 then
+                firetouchinterest(HumanoidRootPart, obj.Parent, 0)
+                task.wait()
+                firetouchinterest(HumanoidRootPart, obj.Parent, 1)
+                collected = collected + 1
+            end
+        end
+    end
+    print("[GPO Hub] Collected " .. collected .. " nearby items")
+end)
+
+-- Teleport to Sea
+CreateButton("Teleport to Sea", function()
+    if HumanoidRootPart then
+        HumanoidRootPart.CFrame = CFrame.new(0, 150, 0)
+    end
+end)
+
+-- Rejoin Server
+CreateButton("Rejoin Server", function()
+    local TeleportService = game:GetService("TeleportService")
+    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+end)
+
+-- ============================================
+-- TOGGLE UI KEYBIND
+-- ============================================
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+-- ============================================
+-- LOAD NOTIFICATION
+-- ============================================
+local Notif = Instance.new("TextLabel")
+Notif.Size = UDim2.new(0, 320, 0, 40)
+Notif.Position = UDim2.new(0.5, -160, 0, -50)
+Notif.BackgroundColor3 = Color3.fromRGB(30, 25, 45)
+Notif.TextColor3 = Color3.fromRGB(180, 140, 255)
+Notif.Text = "⚓ GPO Hub v2 Loaded | Toggle: Right Ctrl"
+Notif.TextSize = 14
+Notif.Font = Enum.Font.GothamBold
+Notif.BorderSizePixel = 0
+Notif.Parent = ScreenGui
+Instance.new("UICorner", Notif).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", Notif).Color = Color3.fromRGB(100, 60, 200)
+
+TweenService:Create(Notif, TweenInfo.new(0.5, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, -160, 0, 20)}):Play()
+task.delay(4, function()
+    TweenService:Create(Notif, TweenInfo.new(0.5, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, -160, 0, -50)}):Play()
+    task.wait(0.6)
+    Notif:Destroy()
+end)
+
+print("[GPO Hub v2] Successfully loaded!")
